@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session
 
 from pprint import pformat
 import os
@@ -41,7 +41,13 @@ def find_afterparties():
     sort = request.args.get('sort', '')
 
     url = 'https://app.ticketmaster.com/discovery/v2/events'
-    payload = {'apikey': API_KEY}
+    payload = {'apikey': API_KEY,
+                'keyword': keyword,
+                'postalcode': postalcode,
+                'radius': radius,
+                'unit': unit,
+                'sort': sort 
+                }
 
     # TODO: Make a request to the Event Search endpoint to search for events
     #
@@ -54,9 +60,15 @@ def find_afterparties():
     # - Replace the empty list in `events` with the list of events from your
     #   search results
 
-    data = {'Test': ['This is just some test data'],
-            'page': {'totalElements': 1}}
-    events = []
+    res = requests.get(url, params=payload)
+    # data = {'Test': ['This is just some test data'],
+    #         'page': {'totalElements': 1}}
+    data = res.json()
+    events = data['_embedded']['events']
+    session['events'] = events
+    # print('*'*20)
+    # print(session.get('events'))
+    # print('*'*20)
 
     return render_template('search-results.html',
                            pformat=pformat,
@@ -73,9 +85,24 @@ def find_afterparties():
 def get_event_details(id):
     """View the details of an event."""
 
+    event = {}
     # TODO: Finish implementing this view function
+    for item in session.get('events',{}):
+        if item['id'] == id:
+            event = item
+            break
+    
+    # print('*'*20)
+    # print(session.get('events'))
+    # print('*'*20)
+    name = event.get('name')
+    start_date = event.get('startDateTime')
+    venue = event.get('venue')
+    classifications = event.get('classifications')
+    # img_url = event['images'][1]['url']
 
-    return render_template('event-details.html')
+    return render_template('event-details.html', name=name, 
+    start_date=start_date, venue=venue, classifications=classifications)
 
 
 if __name__ == '__main__':
