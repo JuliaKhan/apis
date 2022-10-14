@@ -61,14 +61,8 @@ def find_afterparties():
     #   search results
 
     res = requests.get(url, params=payload)
-    # data = {'Test': ['This is just some test data'],
-    #         'page': {'totalElements': 1}}
     data = res.json()
     events = data['_embedded']['events']
-    session['events'] = events
-    # print('*'*20)
-    # print(session.get('events'))
-    # print('*'*20)
 
     return render_template('search-results.html',
                            pformat=pformat,
@@ -85,24 +79,29 @@ def find_afterparties():
 def get_event_details(id):
     """View the details of an event."""
 
-    event = {}
     # TODO: Finish implementing this view function
-    for item in session.get('events',{}):
-        if item['id'] == id:
-            event = item
-            break
+    url = 'https://app.ticketmaster.com/discovery/v2/events'
+    payload = {'apikey': API_KEY, 'id': id}
+
+    res = requests.get(url, params=payload)
+    data = res.json()
+    event = data['_embedded']['events'][0]
     
-    # print('*'*20)
-    # print(session.get('events'))
-    # print('*'*20)
-    name = event.get('name')
-    start_date = event.get('startDateTime')
-    venue = event.get('venue')
-    classifications = event.get('classifications')
-    # img_url = event['images'][1]['url']
+    name = event['name']
+    description = event.get('description','')
+    dates = event['dates']
+    place = event.get('place','')
+    classifications = event['classifications'][0]
+    img_url = event['images'][1]['url']
+    page = event['url']
+
+    for classification in classifications:
+        if type(classifications[classification]) == dict:
+            classifications[classification] = classifications[classification]['name']
 
     return render_template('event-details.html', name=name, 
-    start_date=start_date, venue=venue, classifications=classifications)
+    dates=dates, place=place, classifications=classifications,
+    img_url=img_url, description=description, page=page)
 
 
 if __name__ == '__main__':
